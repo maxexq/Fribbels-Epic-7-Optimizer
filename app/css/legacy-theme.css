@@ -552,8 +552,10 @@ input[type=button]:disabled {
 }
 
 /* ---------- Form fields ---------- */
+/* :where() keeps the generic rules at element specificity, so legacy
+   per-widget sizes (e.g. .optimizer-number-input) still win. */
 
-input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=color]):not([type=range]),
+input:where(:not([type=checkbox], [type=radio], [type=submit], [type=button], [type=color], [type=range])),
 select,
 textarea {
     box-sizing: border-box;
@@ -568,9 +570,28 @@ textarea {
     transition: border-color 0.12s, box-shadow 0.12s;
 }
 
-input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=color]):not([type=range]) {
+input:where(:not([type=checkbox], [type=radio], [type=submit], [type=button], [type=color], [type=range])) {
     padding: 0 6px;
     min-height: 24px;
+}
+
+/* Dense filter grids (Optimizer stat/rating/skill filters, substat sliders):
+   keep the original compact rhythm. */
+input.optimizer-number-input,
+input.sliderInput {
+    height: 21px;
+    min-height: 21px;
+    padding: 0 4px;
+    font-size: 12px;
+}
+
+input.sliderInput {
+    padding: 0 2px;
+    text-align: center;
+}
+
+.sliderLabel {
+    white-space: nowrap;
 }
 
 select {
@@ -585,7 +606,7 @@ textarea {
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
-input:not([type=checkbox]):not([type=radio]):focus,
+input:where(:not([type=checkbox], [type=radio])):focus,
 textarea:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px var(--ring);
@@ -909,14 +930,15 @@ div.ms-parent {
 
 /* ---------- Information tab ---------- */
 
+/* Centered reading column, content left-aligned inside it */
 #aboutTab {
-    padding: 24px 32px 48px;
+    padding: 24px max(32px, calc((100% - 820px) / 2)) 48px;
 }
 
-#aboutTab > * {
-    max-width: 820px;
-    margin-left: auto;
-    margin-right: auto;
+#aboutTab .thankYouContainer {
+    padding: 0;
+    margin-left: 0;
+    max-width: none;
 }
 
 #aboutTab p {
@@ -934,11 +956,20 @@ div.ms-parent {
     cursor: pointer;
 }
 
-#aboutTab #version_label,
+#aboutTab .versionRow {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 28px;
+    margin-bottom: 12px;
+}
+
+#aboutTab .versionRow h1 {
+    margin: 0;
+}
+
 #aboutTab #version {
-    float: none !important;
-    display: inline-block;
-    margin: 28px 8px 0 0;
+    color: var(--primary);
 }
 
 #aboutTab .thankList {
