@@ -1,0 +1,195 @@
+@import '@fontsource-variable/inter/index.css';
+@import '@fontsource/fira-sans-condensed/500.css';
+@import '@fontsource/fira-sans-condensed/600.css';
+@import '@fontsource/fira-sans-condensed/700.css';
+/* Same design tokens as the desktop app */
+@import '../../app/css/tokens.css';
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-display: 'Fira Sans Condensed', var(--font-sans);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-ring: var(--ring);
+  --color-link: var(--link);
+
+  /* Epic Seven gear rarities, used only on the gear item */
+  --color-rarity-epic: #e2433b;
+  --color-rarity-heroic: #b45dff;
+
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 76px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* ---------- Guide (README rendered as HTML) ---------- */
+.guide {
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--foreground);
+}
+.guide > * + * {
+  margin-top: 1em;
+}
+.guide h2,
+.guide h3,
+.guide h4,
+.guide h5 {
+  position: relative;
+  font-family: var(--font-display);
+  line-height: 1.2;
+  letter-spacing: 0.005em;
+  scroll-margin-top: 80px;
+}
+.guide h2 {
+  margin-top: 3.2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+  font-size: 2rem;
+  font-weight: 700;
+}
+.guide h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.guide h3 {
+  margin-top: 2.2rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+.guide h4,
+.guide h5 {
+  margin-top: 1.8rem;
+  font-size: 1.12rem;
+  font-weight: 600;
+}
+.guide .anchor {
+  position: absolute;
+  left: -1.1em;
+  color: var(--subtle-foreground);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.guide h2 .anchor {
+  top: 2rem;
+}
+.guide h2:first-child .anchor {
+  top: 0;
+}
+.guide :is(h2, h3, h4, h5):hover .anchor {
+  opacity: 1;
+}
+.guide p,
+.guide li {
+  max-width: 72ch;
+}
+.guide a:not(.anchor) {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+.guide a:not(.anchor):hover {
+  text-decoration-thickness: 2px;
+}
+.guide strong {
+  font-weight: 600;
+}
+.guide ul,
+.guide ol {
+  padding-left: 1.4em;
+}
+.guide ul {
+  list-style: disc;
+}
+.guide ol {
+  list-style: decimal;
+}
+.guide li + li,
+.guide li > ul,
+.guide li > ol {
+  margin-top: 0.35em;
+}
+.guide li::marker {
+  color: var(--subtle-foreground);
+}
+.guide img {
+  max-width: 100%;
+  height: auto;
+  margin: 0.4rem 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.guide code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+.guide pre {
+  overflow-x: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.guide pre code {
+  padding: 0;
+  background: none;
+}
+.guide hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.guide details {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.guide summary {
+  cursor: pointer;
+  font-weight: 500;
+}

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fribbels E7 Gear Optimizer — find the best gear for every hero</title>
+    <meta
+      name="description"
+      content="Free desktop gear optimizer for Epic Seven. Import your gear from the game, set the stats you need, and get the builds that hit them. Windows and macOS."
+    />
+    <meta property="og:title" content="Fribbels E7 Gear Optimizer" />
+    <meta property="og:description" content="Import your Epic Seven gear, set the stats you need, and get the builds that hit them." />
+    <meta property="og:image" content="/screenshots/heroes-dark.jpg" />
+    <meta name="theme-color" content="#0f1117" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      // Match the saved or system theme before first paint.
+      try {
+        var saved = localStorage.getItem('e7-site-theme');
+        var dark = saved ? saved === 'dark' : !matchMedia('(prefers-color-scheme: light)').matches;
+        document.documentElement.classList.toggle('dark', dark);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

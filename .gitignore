@@ -62,3 +62,6 @@ patchscript
 
 # Vite build output of app/ui
 app/ui-dist
+
+# Website build output
+site/dist

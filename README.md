@@ -2,7 +2,9 @@
 
 This is a tool for organizing gear and optimizing gear and unit builds for Epic 7. Gearing units can be time consuming and it's not easy to find optimal combinations of gear within the game, so I made this to help make the gearing process easier.
 
-Please see the [**Getting Started**](https://github.com/fribbels/Fribbels-Epic-7-Optimizer#getting-started) section for instructions on how to use the optimizer.
+**Website & guide:** https://fribbels-e7-optimizer.pages.dev — this README as a searchable site, with light and dark mode.
+
+Please see the [**Getting Started**](#getting-started) section for instructions on how to use the optimizer.
 
 Features include:
  - Automatically import gear and heroes from the game
@@ -13,13 +15,23 @@ Features include:
  - Reforged stat prediction & editing
  - Color coded results sorting
  - Substat modification optimization
+ - Light and dark themes, with custom dark mode colors
 
 Here's what it looks like currently:
 
-![](https://i.imgur.com/vQ3tnol.png)
+![The Heroes tab in dark mode](docs/screenshots/heroes-dark.jpg)
+
+<details>
+<summary>More screenshots</summary>
+
+![Optimizer tab, dark mode](docs/screenshots/optimizer-dark.jpg)
+![Gear tab, light mode](docs/screenshots/gear-light.jpg)
+![Settings, dark mode](docs/screenshots/settings-dark.jpg)
+
+</details>
 
 ## Requirements
-- 64-bit Windows or MacOS
+- 64-bit Windows 10 or later, or macOS 12 (Monterey) or later
 - Java 8+, 64-Bit installed (Please download if you don't yet have it: https://java.com/en/download/manual.jsp. For Windows, use the 'Windows Offline (64-bit)' installer)
 
 Check out the step-by-step video guide on how to install the app: https://www.youtube.com/watch?v=bDjP5eiOfK0
@@ -59,7 +71,7 @@ _________________
     + [Automatic importer troubleshooting](#automatic-importer-troubleshooting)
     + [Optimizer troubleshooting](#optimizer-troubleshooting)
   * [Contributing to the project](#contributing-to-the-project)
-    + [Setup steps](#setup-steps)
+    + [Development](#development)
 
 ## Optimizer Tab
 
@@ -413,3 +425,19 @@ _________________
 
 The E7 optimizer is currently in maintenance mode - I'll be keeping the project updated with new units but all new feature development is on pause.
 
+### Development
+
+The app is an Electron shell with two UI layers that share one page. Older tabs are jQuery + ag-grid. Newer parts are React 19 + TypeScript + Tailwind CSS + shadcn/ui, built with Vite. Today that's the app shell and the Settings tab, and the remaining tabs are being moved over one at a time. The optimizer itself runs in a Java backend (`backend/`, shipped as `data/jar/backend.jar`).
+
+You need Node.js 22+, Yarn 1 and 64-bit Java 8+.
+
+```sh
+yarn install   # toolchain + app dependencies
+yarn dev       # Electron with hot reload for the React UI
+yarn build     # main process + UI bundle
+yarn package-win   # or package-mac / package-linux: installers in release/
+```
+
+The website in `site/` is built from this README (`yarn site:dev`, `yarn site:build`) and deployed to Cloudflare Pages by `.github/workflows/deploy-site.yml`.
+
+See [DEVELOPING.md](DEVELOPING.md) for the architecture, the theming system and how to migrate a tab.
