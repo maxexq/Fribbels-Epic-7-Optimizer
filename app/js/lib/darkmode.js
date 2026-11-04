@@ -1,7 +1,12 @@
-var dark = false;
+var dark = document.documentElement.classList.contains('dark');
 
 /*
-Handles the toggle between light/dark mode. Switches the CSS and each changed asset.
+Handles the switch between light/dark mode: the html.dark class (which drives
+the design tokens in css/tokens.css), the theme specific image assets, and the
+grid cell color gradients.
+
+The theme toggle lives in the React app shell (app/ui), which calls
+Settings.update({ settingDarkMode }) -> DarkMode.setDark().
 */
 
 module.exports = {
@@ -10,11 +15,22 @@ module.exports = {
         return dark;
     },
 
+    setDark: (enabled) => {
+        dark = !!enabled;
+        document.documentElement.classList.toggle('dark', dark);
+        try {
+            localStorage.setItem('e7-theme', dark ? 'dark' : 'light');
+        } catch (e) {}
+        module.exports.applyAssets();
+        window.dispatchEvent(new CustomEvent('e7:theme', { detail: { dark } }));
+    },
+
     toggle: () => {
-        dark = document.getElementById('darkSlider').checked;
+        module.exports.setDark(!dark);
+    },
+
+    applyAssets: () => {
         if (dark) {
-            $("#darkThemeCss").attr("disabled", false);
-            dark = true;
 
             $("#mainStatAttackPercentFilterIcon").attr("src", "./assets/statatkpercent_dt.png")
             $("#mainStatCdFilterIcon").attr("src", "./assets/statcd_dt.png")
@@ -54,10 +70,6 @@ module.exports = {
             HeroesGrid.toggleDarkMode(true);
             MultiOptimizerTab.toggleDarkMode(true);
         } else {
-            $("#darkThemeCss").attr("disabled", true);
-            // document.querySelector(':root').style.setProperty('--bg-color', 'white');
-
-            dark = false;
 
             $("#mainStatAttackPercentFilterIcon").attr("src", "./assets/statatkpercentdark.png")
             $("#mainStatCdFilterIcon").attr("src", "./assets/statcddark.png")
@@ -100,8 +112,6 @@ module.exports = {
     },
 
     initialize: () => {
-        document.getElementById('darkSlider').addEventListener("click", () => {
-            module.exports.toggle();
-        });
+        module.exports.applyAssets();
     }
 }

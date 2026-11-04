@@ -1,0 +1,27 @@
+/*
+ * Stylesheet entry point for the renderer.
+ *
+ * Everything is placed in cascade layers so precedence is explicit:
+ *   vendor  < legacy  < (Tailwind) theme < base < components < utilities
+ *
+ * This keeps the old global rules (e.g. `input { ... }` in style.css) from
+ * leaking into the React UI, whose Tailwind utilities live in later layers.
+ * The React bundle (ui-dist/ui.css) re-declares the Tailwind layers, which
+ * then slot in after `legacy` because this declaration comes first.
+ */
+@layer vendor, legacy, theme, base, components, utilities;
+
+@import url('tokens.css');
+
+@import url('../node_modules/@fontsource-variable/inter/index.css') layer(vendor);
+@import url('../node_modules/@fortawesome/fontawesome-free/css/all.css') layer(vendor);
+@import url('../node_modules/multiple-select/dist/multiple-select.min.css') layer(vendor);
+@import url('../node_modules/pretty-checkbox/dist/pretty-checkbox.min.css') layer(vendor);
+@import url('../node_modules/ag-grid-community/dist/styles/ag-grid.min.css') layer(vendor);
+@import url('../node_modules/ag-grid-community/dist/styles/ag-theme-balham.min.css') layer(vendor);
+@import url('../node_modules/animate.css/animate.min.css') layer(vendor);
+@import url('../node_modules/tippy.js/dist/tippy.css') layer(vendor);
+
+@import url('style.css') layer(legacy);
+@import url('rangeslider.css') layer(legacy);
+@import url('legacy-theme.css') layer(legacy);

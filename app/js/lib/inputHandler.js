@@ -132,6 +132,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         Tooltip.initialize();
         ColorPicker.initialize();
         EnhancingTab.initialize();
+
+        // Lets the React UI layer (app/ui) know the legacy modules are ready.
+        global.E7_READY = true;
+        window.dispatchEvent(new Event('e7:ready'));
     });
     Scanner.initialize();
     Updater.checkForUpdates();
