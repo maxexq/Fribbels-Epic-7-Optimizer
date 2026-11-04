@@ -21,6 +21,7 @@
 @import url('../node_modules/ag-grid-community/dist/styles/ag-theme-balham.min.css') layer(vendor);
 @import url('../node_modules/animate.css/animate.min.css') layer(vendor);
 @import url('../node_modules/tippy.js/dist/tippy.css') layer(vendor);
+@import url('awn.css') layer(vendor);
 
 @import url('style.css') layer(legacy);
 @import url('rangeslider.css') layer(legacy);

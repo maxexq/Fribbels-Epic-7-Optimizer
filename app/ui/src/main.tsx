@@ -26,7 +26,15 @@ function mount(id: string, node: React.ReactNode) {
   );
 }
 
-mount('ui-root', <AppShell />);
-mount('settings-root', <SettingsPage />);
+function start() {
+  mount('ui-root', <AppShell />);
+  mount('settings-root', <SettingsPage />);
+  document.documentElement.classList.add('has-app-shell');
+}
 
-document.documentElement.classList.add('has-app-shell');
+// Dynamically inserted module scripts can run before parsing finishes.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', start, { once: true });
+} else {
+  start();
+}

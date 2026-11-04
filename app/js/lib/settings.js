@@ -259,6 +259,9 @@ module.exports = {
         }
 
         emit();
+        // Lets the React Settings page render as soon as values exist,
+        // independently of the rest of the startup chain.
+        window.dispatchEvent(new Event('e7:settings'));
         Api.setSettings(module.exports.toApiSettings());
     },
 

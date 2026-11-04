@@ -131,15 +131,33 @@ export function setDarkMode(dark: boolean) {
 /* Settings store                                                      */
 /* ------------------------------------------------------------------ */
 
-const noop = () => () => {};
+function subscribeSettings(cb: () => void) {
+  // `e7:settings` fires once settings.ini is loaded; after that the store
+  // notifies on every change. window.Settings may not exist yet when React
+  // mounts, so look it up lazily.
+  let unsubscribeStore: (() => void) | undefined;
+  const attach = () => {
+    if (!unsubscribeStore && window.Settings) unsubscribeStore = window.Settings.subscribe(cb);
+  };
+  const onLoaded = () => {
+    attach();
+    cb();
+  };
+  attach();
+  window.addEventListener('e7:settings', onLoaded);
+  return () => {
+    window.removeEventListener('e7:settings', onLoaded);
+    unsubscribeStore?.();
+  };
+}
+
+function getSettingsSnapshot() {
+  const settings = window.Settings;
+  return settings?.isLoaded() ? settings.getState() : null;
+}
 
 export function useSettings(): SettingsState | null {
-  const ready = useLegacyReady();
-  const settings = ready ? window.Settings : undefined;
-  return useSyncExternalStore(
-    settings ? settings.subscribe : noop,
-    () => (settings?.isLoaded() ? settings.getState() : null),
-  );
+  return useSyncExternalStore(subscribeSettings, getSettingsSnapshot);
 }
 
 export function updateSettings(partial: Partial<SettingsState>, options?: { persist?: boolean }) {

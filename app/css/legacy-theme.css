@@ -993,3 +993,11 @@ div.ms-parent {
 .tippy-box > .tippy-arrow {
     color: var(--foreground);
 }
+
+/* ---------- Toast notifications (awesome-notifications) ---------- */
+
+#awn-toast-container .awn-toast {
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    font-family: var(--font-sans);
+}

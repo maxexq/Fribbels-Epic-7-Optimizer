@@ -6,7 +6,8 @@
  * - Otherwise the production bundle from app/ui-dist is used.
  *
  * Runs as a classic script in <head>, so the bundle's CSS lands after the
- * legacy stylesheets and its module script runs after the DOM is parsed.
+ * legacy stylesheets. The module may run before parsing finishes, so
+ * app/ui/src/main.tsx waits for DOMContentLoaded before mounting.
  */
 (function () {
   var devServer = typeof process !== 'undefined' && process.env && process.env.UI_DEV_SERVER;

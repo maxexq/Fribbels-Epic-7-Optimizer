@@ -60,7 +60,7 @@ export function SettingsPage() {
         </p>
       </div>
 
-      {!settings ? <SettingsSkeleton /> : <SettingsForm settings={settings} />}
+      {!settings ? <SettingsLoading /> : <SettingsForm settings={settings} />}
     </div>
   );
 }
@@ -452,6 +452,26 @@ function ColorSetting({
         <RotateCcw className="size-3.5" />
       </Button>
     </div>
+  );
+}
+
+/** Settings load after the Java backend starts; explain a long wait. */
+function SettingsLoading() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), 15_000);
+    return () => clearTimeout(timer);
+  }, []);
+  return (
+    <>
+      {slow && (
+        <div role="status" className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-[13px] text-muted-foreground">
+          Still waiting for the optimizer backend to start. Settings load once it is running — if this does not finish,
+          check that 64-bit Java is installed and restart the app.
+        </div>
+      )}
+      <SettingsSkeleton />
+    </>
   );
 }
 
