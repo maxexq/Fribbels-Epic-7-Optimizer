@@ -1,0 +1,84 @@
+/*
+ * Design tokens — the single source of truth for colors, radii and type.
+ *
+ * Consumed by:
+ *   - css/legacy-theme.css (the jQuery tabs, through the legacy --bg-color/... aliases)
+ *   - app/ui (React + Tailwind, mapped in app/ui/src/styles/app.css via @theme)
+ *
+ * Light values live on :root, dark values on html.dark. In dark mode the
+ * "Custom dark mode colors" settings can override a few of them through the
+ * --user-* properties (set by js/lib/colorPicker.js).
+ */
+
+:root {
+  color-scheme: light;
+
+  --font-sans: 'Inter Variable', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, monospace;
+
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 10px;
+
+  --background: #f4f5f8;
+  --foreground: #161a22;
+  --surface: #ffffff;
+  --surface-2: #eef0f4;
+  --surface-hover: #e5e8ee;
+  --field: #ffffff;
+  --border: #dde1e8;
+  --border-strong: #c6ccd6;
+  --muted-foreground: #5f6878;
+  --subtle-foreground: #8a93a3;
+
+  --primary: #b45309;
+  --primary-hover: #92400e;
+  --primary-foreground: #ffffff;
+  --primary-soft: color-mix(in oklab, var(--primary) 14%, transparent);
+  --ring: color-mix(in oklab, var(--primary) 55%, transparent);
+
+  --success: #15803d;
+  --danger: #c2410c;
+  --link: #1d4ed8;
+
+  --grid-foreground: var(--foreground);
+  --grid-row-alt: #f8f9fb;
+  --scrollbar: #c3c9d3;
+
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.06);
+  --shadow: 0 1px 3px rgb(16 24 40 / 0.08), 0 1px 2px rgb(16 24 40 / 0.04);
+  --shadow-lg: 0 12px 32px rgb(16 24 40 / 0.14);
+}
+
+html.dark {
+  color-scheme: dark;
+
+  --background: var(--user-background, #0f1117);
+  --foreground: var(--user-foreground, #e6e8ee);
+  --surface: color-mix(in oklab, var(--background), white 4%);
+  --surface-2: color-mix(in oklab, var(--background), white 7%);
+  --surface-hover: color-mix(in oklab, var(--background), white 11%);
+  --field: var(--user-field, #1b1f29);
+  --border: color-mix(in oklab, var(--background), white 11%);
+  --border-strong: color-mix(in oklab, var(--background), white 19%);
+  --muted-foreground: color-mix(in oklab, var(--foreground) 62%, var(--background));
+  --subtle-foreground: color-mix(in oklab, var(--foreground) 42%, var(--background));
+
+  --primary: var(--user-primary, #f2b544);
+  --primary-hover: color-mix(in oklab, var(--primary), white 12%);
+  --primary-foreground: #1c1406;
+  --primary-soft: color-mix(in oklab, var(--primary) 18%, transparent);
+  --ring: color-mix(in oklab, var(--primary) 55%, transparent);
+
+  --success: var(--user-success, #3fb37a);
+  --danger: #f2774a;
+  --link: #7aa7ff;
+
+  --grid-foreground: var(--user-grid-foreground, var(--foreground));
+  --grid-row-alt: color-mix(in oklab, var(--background), white 2.5%);
+  --scrollbar: color-mix(in oklab, var(--background), white 22%);
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow: 0 1px 3px rgb(0 0 0 / 0.35), 0 1px 2px rgb(0 0 0 / 0.2);
+  --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.5);
+}

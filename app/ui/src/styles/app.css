@@ -1,0 +1,117 @@
+/*
+ * Tailwind entry for the React UI layer.
+ *
+ * Tailwind's preflight is intentionally NOT imported: it would reset the
+ * legacy tabs that share this page. A scoped reset is applied to `.ui-scope`
+ * instead (every React mount point and portal carries that class).
+ *
+ * Colors come from app/css/tokens.css, which the legacy CSS uses too.
+ */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@source '../';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-field: var(--field);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-link: var(--link);
+
+  /* shadcn/ui names, so generated components work unchanged */
+  --color-card: var(--surface);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--foreground);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--surface-2);
+  --color-accent: var(--surface-hover);
+  --color-accent-foreground: var(--foreground);
+  --color-destructive: var(--danger);
+  --color-input: var(--border-strong);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-lg: var(--shadow-lg);
+}
+
+/* Scoped replacement for Tailwind preflight. */
+@layer base {
+  .ui-scope,
+  .ui-scope *,
+  .ui-scope ::before,
+  .ui-scope ::after {
+    box-sizing: border-box;
+    border: 0 solid;
+    border-color: var(--border);
+    margin: 0;
+    padding: 0;
+  }
+
+  .ui-scope {
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
+    line-height: 1.5;
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .ui-scope :where(button, input, select, textarea) {
+    font: inherit;
+    color: inherit;
+    background-color: transparent;
+    letter-spacing: inherit;
+  }
+
+  .ui-scope :where(button, [role='button']) {
+    cursor: pointer;
+  }
+
+  .ui-scope :where(button:disabled) {
+    cursor: default;
+  }
+
+  .ui-scope :where(h1, h2, h3, h4, p) {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  .ui-scope :where(ul, ol) {
+    list-style: none;
+  }
+
+  .ui-scope :where(img, svg) {
+    display: block;
+    vertical-align: middle;
+  }
+
+  .ui-scope :where(a) {
+    color: inherit;
+    text-decoration: inherit;
+    opacity: 1;
+  }
+}

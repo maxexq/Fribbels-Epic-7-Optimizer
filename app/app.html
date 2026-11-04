@@ -1,9 +1,18 @@
+<!doctype html>
+<html lang="en">
 <head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fribbels E7 Optimizer</title>
 <script>
 global = globalThis //<- this should be enough
 global.$ = require('jquery');
 window.$ = $;
 window.jQuery = $;
+// Apply the last used theme before first paint (settings load asynchronously).
+try {
+  if (localStorage.getItem('e7-theme') !== 'light') document.documentElement.classList.add('dark');
+} catch (e) {}
 </script>
 <script src="node_modules/i18next/i18next.min.js"></script>
 <script src="node_modules/i18next-browser-languagedetector/i18nextBrowserLanguageDetector.min.js"></script>
@@ -11,38 +20,19 @@ window.jQuery = $;
 <script src="node_modules/i18next-http-backend/i18nextHttpBackend.min.js"></script>
 <script src="node_modules/i18next-chained-backend/i18nextChainedBackend.min.js"></script>
 <script src="node_modules/rangeslider-js/dist/rangeslider-js.min.js"></script>
-
-<link rel="stylesheet" href="node_modules/@fortawesome/fontawesome-free/css/all.css">
-
-<link rel="stylesheet" href="node_modules/multiple-select/dist/multiple-select.min.css">
-<link rel="stylesheet" href="node_modules/pretty-checkbox/dist/pretty-checkbox.min.css">
-
 <script src="node_modules/multiple-select/dist/multiple-select.min.js"></script>
 
-
-<!-- <link href="https://fonts.googleapis.com/css?family=Work+Sans:400,600,700&display=swap" rel="stylesheet"> -->
-<link rel="stylesheet" type="text/css" href="node_modules/ag-grid-community/dist/styles/ag-grid.min.css">
-<link rel="stylesheet" type="text/css" href="node_modules/ag-grid-community/dist/styles/ag-theme-balham.min.css">
-<link rel="stylesheet" type="text/css" href="node_modules/ag-grid-community/dist/styles/ag-theme-alpine.min.css">
-<link rel="stylesheet" type="text/css" href="node_modules/ag-grid-community/dist/styles/ag-theme-material.min.css">
-<link rel="stylesheet" type="text/css" href="node_modules/animate.css/animate.min.css">
-<link rel="stylesheet" type="text/css" href="css/style.css">
-<link rel="stylesheet" type="text/css" href="css/rangeslider.css">
-<link rel="stylesheet" type="text/css" id="darkThemeCss" disabled href="css/darktheme.css">
-
-<link
-  rel="stylesheet"
-  href="node_modules/tippy.js/dist/tippy.css"
-/>
-<link rel="stylesheet" type="text/css" href="css/awn.css"></link>
+<!-- All vendor + legacy CSS, in cascade layers (see css/app.css) -->
+<link rel="stylesheet" href="css/app.css">
+<!-- Unlayered overrides for styles that libraries inject at runtime (sweetalert2) -->
+<link rel="stylesheet" href="css/overrides.css">
+<!-- React UI layer (app/ui): dev server with HMR, or the built bundle -->
+<script src="ui-loader.js"></script>
 </head>
 <body>
-<div class="darkModeToggleContainer">
-  <label id="darkSwitch" class="darkSwitch">
-    <input type="checkbox" id="darkSlider">
-    <span class="darkSlider round"></span>
-  </label>
-</div>
+<!-- App shell (top bar, navigation) rendered by app/ui -->
+<div id="ui-root"></div>
+
 <!-- <div class="coffeeContainer">
   <img class="coffeeContainerImage" id="coffeeImage" src="./assets/coffee.png">
 </div> -->
@@ -1979,241 +1969,8 @@ window.jQuery = $;
 
 
     <div id="settingsTab" class="tab-panel">
-      <h2 data-t>Settings</h2>
-
-
-       <input type="submit" style="display:none" id="clearlocalCache" onclick="clearlocalCache()" value="Clear language cache" data-t>
-
-        <div class="toggleRow">
-          <input type="text" id="settingLocatorWidth" class="settingsNumber">
-          <div class="switchText" data-t>
-            Locator width setting: # of columns per row on the Manage Equipment page for equipping heroes. Rescan items to update locator
-          </div>
-        </div>
-
-        <div class="toggleRow">
-          <div class="switch">
-            <input id="settingGpu" type="checkbox" class="switch-input" />
-            <label for="settingGpu" class="switch-label"></label>
-          </div>
-          <div class="switchText" data-t>
-            GPU accelerated optimization (Disable this option if you notice errors or decreased performance)
-          </div>
-        </div>
-
-        <div class="toggleRow">
-          <div class="switch">
-            <input id="settingUnlockOnUnequip" type="checkbox" class="switch-input" />
-            <label for="settingUnlockOnUnequip" class="switch-label"></label>
-          </div>
-          <div class="switchText" data-t>
-            Automatically unlock equipment after unequipping
-          </div>
-        </div>
-
-        <div class="toggleRow">
-          <div class="switch">
-            <input id="settingRageSet" type="checkbox" class="switch-input" />
-            <label for="settingRageSet" class="switch-label"></label>
-          </div>
-          <div class="switchText" data-t>
-            Use rage set bonus for damage optimization
-          </div>
-        </div>
-
-        <div class="toggleRow">
-          <div class="switch">
-            <input id="settingPenSet" type="checkbox" class="switch-input" />
-            <label for="settingPenSet" class="switch-label"></label>
-          </div>
-          <div class="switchText" data-t>
-            Use penetration set bonus for damage optimization
-          </div>
-        </div>
-
-        <div class="toggleRow">
-          <input type="text" id="settingPenDefense" class="settingsNumber">
-          <div class="switchText" data-t>
-            Target's defense for penetration set (Recommended: 1,500, Min 0, Max 10k)
-          </div>
-        </div>
-
-        <div class="toggleRow">
-          <input type="text" id="settingMaxRamGb" class="settingsNumber">
-          <div class="switchText" data-t>
-            Maximum RAM capacity GB - Restart after changing (Recommended: 6)
-          </div>
-        </div>
-
-        <div class="toggleRow">
-          <input type="text" id="settingMaxResults" class="settingsNumber">
-          <div class="switchText" data-t>
-            Maximum optimization results (Recommended: 5,000,000, Min 10k, Max 100m)
-          </div>
-        </div>
-
-        <div class="toggleRow">
-          <input type="submit" class="gearPreviewButton" value="Change saves folder" id="selectDefaultFolderSubmit" data-t>
-          <div class="toggleRowSpace"></div>
-          <text id="selectDefaultFolderSubmitOutputText" data-t>Select default folder</text>
-        </div>
-
-       </br>
-       <div>
-            <h2 data-t>Default settings for newly added heroes</h2>
-       </div>
-
-        <div class="horizontalSpace"></div>
-        <div class="horizontalSpace"></div>
-        <div class="toggleRow">
-          <div class="switch">
-            <input id="settingDefaultUseReforgedStats" type="checkbox" class="switch-input" />
-            <label for="settingDefaultUseReforgedStats" class="switch-label"></label>
-          </div>
-          <div class="switchText" data-t>
-            Use reforged stats
-          </div>
-        </div>
-        <div class="toggleRow">
-          <div class="switch">
-            <input id="settingDefaultUseHeroPriority" type="checkbox" class="switch-input" />
-            <label for="settingDefaultUseHeroPriority" class="switch-label"></label>
-          </div>
-          <div class="switchText" data-t>
-            Use hero priority
-          </div>
-        </div>
-        <div class="toggleRow">
-          <div class="switch">
-            <input id="settingDefaultUseSubstatMods" type="checkbox" class="switch-input" />
-            <label for="settingDefaultUseSubstatMods" class="switch-label"></label>
-          </div>
-          <div class="switchText" data-t>
-            Use substat mods
-          </div>
-        </div>
-        <div class="toggleRow">
-          <div class="switch">
-            <input id="settingDefaultLockedItems" type="checkbox" class="switch-input" />
-            <label for="settingDefaultLockedItems" class="switch-label"></label>
-          </div>
-          <div class="switchText" data-t>
-            Locked items
-          </div>
-        </div>
-        <div class="toggleRow">
-          <div class="switch">
-            <input id="settingDefaultEquippedItems" type="checkbox" class="switch-input" />
-            <label for="settingDefaultEquippedItems" class="switch-label"></label>
-          </div>
-          <div class="switchText" data-t>
-            Equipped items
-          </div>
-        </div>
-        <div class="toggleRow">
-          <div class="switch">
-            <input id="settingDefaultKeepCurrent" type="checkbox" class="switch-input" />
-            <label for="settingDefaultKeepCurrent" class="switch-label"></label>
-          </div>
-          <div class="switchText" data-t>
-            Keep current
-          </div>
-        </div>
-
-
-
-       </br>
-       <div>
-            <h2 data-t>Languages</h2>
-       </div>
-
-       <div class="toggleRow">
-        <div class="switchText languageToggle" onclick="location.href='app.html?lng=en';" style="cursor: pointer;">English</div>
-        <span class="switchText"> | </span>
-        <div class="switchText languageToggle" onclick="location.href='app.html?lng=zh';" style="cursor: pointer;">简体中文</div>
-        <span class="switchText"> | </span>
-        <div class="switchText languageToggle" onclick="location.href='app.html?lng=zh-TW';" style="cursor: pointer;">繁體中文</div>
-        <span class="switchText"> | </span>
-        <div class="switchText languageToggle" onclick="location.href='app.html?lng=fr';" style="cursor: pointer;">Français</div>
-        <span class="switchText"> | </span>
-        <div class="switchText languageToggle" onclick="location.href='app.html?lng=ja';" style="cursor: pointer;">日本語</div>
-        <span class="switchText"> | </span>
-        <div class="switchText languageToggle" onclick="location.href='app.html?lng=ko';" style="cursor: pointer;">한국어</div>
-        <span class="switchText"> | </span>
-        <div class="switchText languageToggle" onclick="location.href='app.html?lng=ru';" style="cursor: pointer;">Русский язык</div>
-        <br><br>
-       </div>
-
-       <div>
-        <h2 data-t>Custom Dark Mode Colors </h2>
-      </div>
-      <table>
-        <tr>
-          <td>
-            <text data-t>General</text>
-          </td>
-
-          <td>
-            <text data-t>Grid</text>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding-right: 60px; min-width: 300px">
-            <div class="toggleRow">
-              <input type="color" class="colorpicker" id="backgroundColorPicker" value="#212529">
-              <div class="toggleRowSpace"></div>
-              <text class="colorPickerText" data-content=" (reset)" id="backgroundColorPickerText" data-t>Background color</text>
-            </div>
-
-            <div class="toggleRow">
-              <input type="color" class="colorpicker" id="textColorPicker" value="#E2E2E2">
-              <div class="toggleRowSpace"></div>
-              <text class="colorPickerText" data-content=" (reset)" id="textColorPickerText" data-t>Text color</text>
-            </div>
-
-            <div class="toggleRow">
-              <input type="color" class="colorpicker" id="accentColorPicker" value="#F84C48">
-              <div class="toggleRowSpace"></div>
-              <text class="colorPickerText" data-content=" (reset)" id="accentColorPickerText" data-t>Accent color</text>
-            </div>
-
-            <div class="toggleRow">
-              <input type="color" class="colorpicker" id="inputColorPicker" value="#2D3136">
-              <div class="toggleRowSpace"></div>
-              <text class="colorPickerText" data-content=" (reset)" id="textboxColorPickerText" data-t>Textbox/Button color</text>
-            </div>
-
-          </td>
-          <td>
-            <div class="toggleRow">
-              <input type="color" class="colorpicker" id="gridTextColorPicker" value="#e2e2e2">
-              <div class="toggleRowSpace"></div>
-              <text class="colorPickerText" data-content=" (reset)" id="gridTextColorPickerText" data-t>Text color</text>
-            </div>
-            <div class="toggleRow">
-              <input type="color" class="colorpicker" id="redColorPicker" value="#5A1A06">
-              <div class="toggleRowSpace"></div>
-              <text class="colorPickerText" data-content=" (reset)" id="gridRedColorPickerText" data-t>Red color</text>
-            </div>
-
-            <div class="toggleRow">
-              <input type="color" class="colorpicker" id="neutralColorPicker" value="#343127">
-              <div class="toggleRowSpace"></div>
-              <text class="colorPickerText" data-content=" (reset)" id="gridNeutralColorPickerText" data-t>Neutral color</text>
-            </div>
-
-            <div class="toggleRow">
-              <input type="color" class="colorpicker" id="greenColorPicker" value="#38821F">
-              <div class="toggleRowSpace"></div>
-              <text class="colorPickerText" data-content=" (reset)" id="gridGreenColorPickerText" data-t>Green color</text>
-            </div>
-          </td>
-        </tr>
-      </table>
-
-      <br>
-      <br>
-
+      <!-- Rendered by app/ui (features/settings) -->
+      <div id="settings-root" class="ui-scope"></div>
     </div>
 
 
@@ -2265,10 +2022,10 @@ window.jQuery = $;
         </li>
       </ul>
 
-      <h1 id="version_label" style="text-align:left;float:left;" data-t>Current version</h1>
-      <h1 id="version" style="text-align:left;float:left;" data-t>Loading...</h1>
-      <hr style="clear:both;visibility: hidden;"/>
-      <br>
+      <div class="versionRow">
+        <h1 id="version_label" data-t>Current version</h1>
+        <h1 id="version" data-t>Loading...</h1>
+      </div>
 
       <input type="submit" value="Check for updates" class="gearPreviewButton" id="checkForUpdatesSubmit" data-t>
     </div>
@@ -2277,3 +2034,4 @@ window.jQuery = $;
 </div>
 <script type="module" src="./js/init.js"></script>
 </body>
+</html>

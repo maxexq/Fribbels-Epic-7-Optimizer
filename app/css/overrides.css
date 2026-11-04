@@ -1,0 +1,59 @@
+/*
+ * Unlayered overrides for CSS that libraries inject at runtime (and that
+ * therefore always beats anything inside a cascade layer).
+ */
+
+/* sweetalert2 (js/lib/dialog.js) */
+.swal2-container .swal2-popup {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--foreground);
+    box-shadow: var(--shadow-lg);
+    font-family: var(--font-sans);
+}
+
+.swal2-container.swal2-backdrop-show {
+    background: rgb(0 0 0 / 0.45);
+}
+
+.swal2-popup .swal2-title,
+.swal2-popup .swal2-html-container,
+.swal2-popup .swal2-content {
+    color: var(--foreground);
+}
+
+.swal2-popup .swal2-styled {
+    border-radius: var(--radius);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 18px;
+}
+
+.swal2-popup .swal2-styled.swal2-confirm {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.swal2-popup .swal2-styled.swal2-cancel,
+.swal2-popup .swal2-styled.swal2-deny {
+    background-color: var(--surface-2);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+}
+
+.swal2-popup .swal2-styled:focus {
+    box-shadow: 0 0 0 3px var(--ring);
+}
+
+.swal2-popup .swal2-input,
+.swal2-popup .swal2-textarea,
+.swal2-popup .swal2-select {
+    border: 1px solid var(--border-strong);
+    background: var(--field);
+    color: var(--foreground);
+}
+
+.swal2-popup .swal2-html-container {
+    font-size: 14px;
+}

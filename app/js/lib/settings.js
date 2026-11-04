@@ -1,3 +1,14 @@
+/*
+ * Settings store.
+ *
+ * Holds the parsed settings.ini in memory and is the single source of truth for
+ * every setting. The Settings page (app/ui, React) reads it with getState() /
+ * subscribe() and writes it with update(); legacy modules keep using the
+ * existing helpers (parseNumberValue, getOptimizerOptions, getDefaultPath, ...).
+ *
+ * Two values still live in legacy widgets on the Optimizer tab and are read
+ * from there when saving: the "exclude equipped" and "enhance limit" selects.
+ */
 const remote = require('@electron/remote');
 const dialog = remote.dialog
 const currentWindow = remote.getCurrentWindow();
@@ -7,110 +18,159 @@ const savesFolder = documentsPath + '/FribbelsOptimizerSaves';
 const defaultPath = savesFolder;
 
 const settingsPath = defaultPath + "/settings.ini";
-var pathOverride;
 
-var excludeSelects = [];
-var enhanceLimit = 0;
-var defaultOptimizerSettings = {
-    settingDefaultUseReforgedStats: true,
-    settingDefaultUseHeroPriority: false,
-    settingDefaultUseSubstatMods: false,
-    settingDefaultLockedItems: false,
-    settingDefaultEquippedItems: false,
-    settingDefaultKeepCurrent: false,
+const OPTIMIZER_DEFAULT_KEYS = [
+    'settingDefaultUseReforgedStats',
+    'settingDefaultUseHeroPriority',
+    'settingDefaultUseSubstatMods',
+    'settingDefaultLockedItems',
+    'settingDefaultEquippedItems',
+    'settingDefaultKeepCurrent',
+];
+
+var state = {};
+var loaded = false;
+const listeners = new Set();
+
+function isNullUndefined(x) {
+    return x === null || x === undefined;
 }
 
-function formatNumbersOnKey(event) {
-    // When user select text in the document, also abort.
-    var selection = window.getSelection().toString();
-    if (selection !== '') {
-        return;
+function emit() {
+    for (const listener of listeners) {
+        try {
+            listener(state);
+        } catch (e) {
+            console.warn("Settings listener failed", e);
+        }
     }
-    // When the arrow keys are pressed, abort.
-    if ($.inArray(event.keyCode, [38, 40, 37, 39]) !== -1) {
-        return;
+}
+
+function toInt(value, fallback) {
+    const parsed = parseInt(String(isNullUndefined(value) ? '' : value).replace(/,/g, ''));
+    return isNaN(parsed) ? fallback : parsed;
+}
+
+/*
+Fill in missing values and coerce types, so the rest of the app can rely on
+the shape of the state regardless of how old the settings.ini file is.
+*/
+function normalize(settings) {
+    const defaults = module.exports.getDefaultSettings();
+    const result = Object.assign({}, defaults, settings);
+
+    for (const key of ['settingGpu', 'settingUnlockOnUnequip', 'settingRageSet', 'settingPenSet', 'settingDefaultUseReforgedStats']) {
+        if (isNullUndefined(settings[key])) result[key] = defaults[key];
+        result[key] = !!result[key];
     }
-    var $this = $(this);
-    // Get the value.
-    var input = $this.val();
-    input = input.replace(/[\D\s\._\-]+/g, "");
-    input = input?parseInt(input, 10):0;
-    $this.val(function () {
-        return (input === 0)?"":input.toLocaleString("en-US");
-    });
+    for (const key of OPTIMIZER_DEFAULT_KEYS.concat(['settingDarkMode'])) {
+        result[key] = !!result[key];
+    }
+
+    result.settingMaxResults = toInt(result.settingMaxResults, defaults.settingMaxResults) || defaults.settingMaxResults;
+    result.settingMaxRamGb = toInt(result.settingMaxRamGb, defaults.settingMaxRamGb) || defaults.settingMaxRamGb;
+    result.settingPenDefense = toInt(result.settingPenDefense, defaults.settingPenDefense);
+    result.settingLocatorWidth = toInt(result.settingLocatorWidth, defaults.settingLocatorWidth) || defaults.settingLocatorWidth;
+
+    for (const key of ColorPicker.THEME_COLOR_KEYS) {
+        result[key] = ColorPicker.normalizeThemeColor(key, result[key]);
+    }
+
+    return result;
+}
+
+function readLegacySelects() {
+    const result = {};
+    try {
+        result.settingExcludeEquipped = $('#optionsExcludeGearFrom').multipleSelect('getSelects');
+        result.settingEnhanceLimit = $('#optionsEnhanceLimit').multipleSelect('getSelects');
+    } catch (e) {
+        // Selects not initialized yet; keep the stored values.
+    }
+    return result;
 }
 
 module.exports = {
     initialize: async () => {
         await module.exports.loadSettings();
 
-        // Format numbers
-        $("#settingMaxResults").on("keyup", formatNumbersOnKey);
-        $("#settingMaxRamGb").on("keyup", formatNumbersOnKey);
-        $("#settingPenDefense").on("keyup", formatNumbersOnKey);
-        $("#settingLocatorWidth").on("keyup", formatNumbersOnKey);
-
-        const settingsIds = [
-            'settingGpu',
-            'settingUnlockOnUnequip',
-            'settingMaxResults',
-            'settingMaxRamGb',
-            'settingPenDefense',
-            'settingLocatorWidth',
-            'settingRageSet',
-            'settingPenSet',
-            'settingDefaultUseReforgedStats',
-            'settingDefaultUseHeroPriority',
-            'settingDefaultUseSubstatMods',
-            'settingDefaultLockedItems',
-            'settingDefaultEquippedItems',
-            'settingDefaultKeepCurrent',
-        ];
-
         $('#optionsExcludeGearFrom').change(module.exports.saveSettings)
         $('#optionsEnhanceLimit').change(module.exports.saveSettings)
-        $('#darkSlider').change(module.exports.saveSettings)
+    },
 
-        for (var id of settingsIds) {
-            document.getElementById(id).addEventListener('change', (event) => {
-                module.exports.saveSettings();
-            });
+    isLoaded: () => loaded,
+
+    getState: () => state,
+
+    /*
+    Subscribe to changes. Returns an unsubscribe function.
+    */
+    subscribe: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+    },
+
+    /*
+    Merge a partial update into the store, apply its side effects and persist.
+    Pass { persist: false } for live previews (e.g. while dragging a color).
+    */
+    update: (partial, options) => {
+        const persist = !options || options.persist !== false;
+        state = Object.assign({}, state, partial);
+
+        const keys = Object.keys(partial);
+        if (keys.some(key => ColorPicker.THEME_COLOR_KEYS.includes(key) || key in ColorPicker.GRID_COLOR_DEFAULTS)) {
+            ColorPicker.apply(state);
+        }
+        if ('settingDarkMode' in partial && DarkMode.isDark() !== !!partial.settingDarkMode) {
+            DarkMode.setDark(!!partial.settingDarkMode);
         }
 
-        document.getElementById('selectDefaultFolderSubmit').addEventListener("click", async () => {
-            const options = {
-                title: "Open folder",
-                defaultPath : module.exports.getDefaultPath(),
-                buttonLabel : "Open folder",
-                properties: ['openDirectory'],
-            }
+        emit();
 
-            const filenames = dialog.showOpenDialogSync(currentWindow, options);
-            console.log(filenames);
-
-            if (!filenames || filenames.length < 1) {
-                return console.warn("Invalid filename")
-            };
-
-            const path = Files.path(filenames[0]);
-            pathOverride = path;
+        if (persist) {
             module.exports.saveSettings();
-            $('#selectDefaultFolderSubmitOutputText').text(`New saves folder: ${path}`);
+        }
+    },
 
-            Notifier.info(path);
-        });
+    selectSavesFolder: async () => {
+        const options = {
+            title: "Open folder",
+            defaultPath : module.exports.getDefaultPath(),
+            buttonLabel : "Open folder",
+            properties: ['openDirectory'],
+        }
+
+        const result = await dialog.showOpenDialog(currentWindow, options);
+        const filenames = result && result.filePaths;
+
+        if (!filenames || filenames.length < 1) {
+            return console.warn("Invalid filename")
+        };
+
+        const path = Files.path(filenames[0]);
+        module.exports.update({ settingDefaultPath: path });
+        Notifier.info(path);
+        return path;
     },
 
     getDefaultPath: () => {
-        return Files.path(pathOverride || defaultPath);
+        return Files.path(state.settingDefaultPath || defaultPath);
     },
 
     getExcludeSelects: () => {
-        return excludeSelects;
+        return state.settingExcludeEquipped || [];
     },
 
     getOptimizerOptions: () => {
-        return defaultOptimizerSettings;
+        const options = {};
+        for (const key of OPTIMIZER_DEFAULT_KEYS) {
+            options[key] = !!state[key];
+        }
+        if (isNullUndefined(state.settingDefaultUseReforgedStats)) {
+            options.settingDefaultUseReforgedStats = true;
+        }
+        return options;
     },
 
     getDefaultSettings: () => {
@@ -134,22 +194,24 @@ module.exports = {
             settingDefaultLockedItems: false,
             settingDefaultEquippedItems: false,
             settingDefaultKeepCurrent: false,
-            settingBackgroundColor: '#212529',
-            settingTextColorPicker: '#E2E2E2',
-            settingAccentColorPicker: '#F84C48',
-            settingInputColorPicker: '#2D3136',
-            settingGridTextColorPicker: '#E2E2E2',
+            // null = use the built-in theme color
+            settingBackgroundColor: null,
+            settingTextColorPicker: null,
+            settingAccentColorPicker: null,
+            settingInputColorPicker: null,
+            settingGridTextColorPicker: null,
             settingRedColorPicker: '#5A1A06',
             settingNeutralColorPicker: '#343127',
             settingGreenColorPicker: '#38821F'
         }
     },
 
+    /*
+    Numeric settings by id, e.g. parseNumberValue('settingMaxRamGb').
+    Returns NaN before settings are loaded so callers fall back to their defaults.
+    */
     parseNumberValue: (id) => {
-        var value = document.getElementById(id).value;
-        value = value.replace(/,/g, "")
-
-        return parseInt(value);
+        return toInt(state[id], NaN);
     },
 
     loadSettings: async () => {
@@ -171,121 +233,43 @@ module.exports = {
             Notifier.error(`Using default settings instead.`)
         }
 
-        console.log("LOADING SETTINGS", settings);
+        state = normalize(settings);
+        loaded = true;
 
-        function isNullUndefined(x) {
-            return x === null || x === undefined;
+        DarkMode.setDark(state.settingDarkMode);
+
+        if (state.settingExcludeEquipped) {
+            $('#optionsExcludeGearFrom').multipleSelect('setSelects', state.settingExcludeEquipped)
         }
 
-        document.getElementById('settingGpu').checked = isNullUndefined(settings.settingGpu) ? true : settings.settingGpu;
-        document.getElementById('settingUnlockOnUnequip').checked = isNullUndefined(settings.settingUnlockOnUnequip) ? true : settings.settingUnlockOnUnequip;
-        document.getElementById('settingRageSet').checked = isNullUndefined(settings.settingRageSet) ? true : settings.settingRageSet;
-        document.getElementById('settingPenSet').checked = isNullUndefined(settings.settingPenSet) ? true : settings.settingPenSet;
-        document.getElementById('settingDefaultUseReforgedStats').checked = isNullUndefined(settings.settingDefaultUseReforgedStats) ? true : settings.settingDefaultUseReforgedStats;
-        document.getElementById('settingDefaultUseHeroPriority').checked = settings.settingDefaultUseHeroPriority;
-        document.getElementById('settingDefaultUseSubstatMods').checked = settings.settingDefaultUseSubstatMods;
-        document.getElementById('settingDefaultLockedItems').checked = settings.settingDefaultLockedItems;
-        document.getElementById('settingDefaultEquippedItems').checked = settings.settingDefaultEquippedItems;
-        document.getElementById('settingDefaultKeepCurrent').checked = settings.settingDefaultKeepCurrent;
-        defaultOptimizerSettings = {
-            settingDefaultUseReforgedStats: isNullUndefined(settings.settingDefaultUseReforgedStats) ? true : settings.settingDefaultUseReforgedStats,
-            settingDefaultUseHeroPriority: settings.settingDefaultUseHeroPriority,
-            settingDefaultUseSubstatMods: settings.settingDefaultUseSubstatMods,
-            settingDefaultLockedItems: settings.settingDefaultLockedItems,
-            settingDefaultEquippedItems: settings.settingDefaultEquippedItems,
-            settingDefaultKeepCurrent: settings.settingDefaultKeepCurrent
-        }
-        pathOverride = settings.settingDefaultPath;
-
-        console.warn("changing path override to: " + pathOverride);
-
-        if (isNullUndefined(settings.settingPenSet)) {
-            settings.settingPenSet = true;
+        if (state.settingEnhanceLimit) {
+            $('#optionsEnhanceLimit').multipleSelect('setSelects', state.settingEnhanceLimit)
         }
 
-        if (isNullUndefined(settings.settingGpu)) {
-            settings.settingGpu = true;
-        }
-
-        if (settings.settingMaxResults) {
-            document.getElementById('settingMaxResults').value = settings.settingMaxResults.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        } else {
-            document.getElementById('settingMaxResults').value = "5,000,000";
-            settings.settingMaxResults = 5_000_000;
-        }
-
-        if (settings.settingMaxRamGb) {
-            document.getElementById('settingMaxRamGb').value = settings.settingMaxRamGb.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        } else {
-            document.getElementById('settingMaxRamGb').value = "6";
-            settings.settingMaxRamGb = 6;
-        }
-
-        if (settings.settingPenDefense) {
-            document.getElementById('settingPenDefense').value = settings.settingPenDefense.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        } else {
-            document.getElementById('settingPenDefense').value = "1,500";
-            settings.settingPenDefense = 1_500;
-        }
-
-        if (settings.settingLocatorWidth) {
-            document.getElementById('settingLocatorWidth').value = settings.settingLocatorWidth.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        } else {
-            document.getElementById('settingLocatorWidth').value = "5";
-            settings.settingLocatorWidth = 5;
-        }
-
-        if (settings.settingDarkMode) {
-            document.getElementById('darkSlider').checked = true;
-            DarkMode.toggle();
-        }
-
-        if (settings.settingExcludeEquipped) {
-            console.log("BEFORE", $('#optionsExcludeGearFrom').multipleSelect('getOptions'))
-            console.log("BEFORE", $('#optionsExcludeGearFrom').multipleSelect('getSelects'))
-            $('#optionsExcludeGearFrom').multipleSelect('setSelects', settings.settingExcludeEquipped)
-            console.log("AFTER", $('#optionsExcludeGearFrom').multipleSelect('getSelects'))
-            excludeSelects = settings.settingExcludeEquipped;
-        }
-
-        if (settings.settingEnhanceLimit) {
-            $('#optionsEnhanceLimit').multipleSelect('setSelects', settings.settingEnhanceLimit)
-            enhanceLimit = settings.settingEnhanceLimit;
-        }
-
-  // "settingBackgroundColor": "#212529",
-  // "settingTextColorPicker": "#e2e2e2",
-  // "settingAccentColorPicker": "#f84c48",
-  // "settingInputColorPicker": "#2d3136",
-  // "settingGridTextColorPicker": "#ffffff",
-  // "settingRedColorPicker": "#ff430a",
-  // "settingNeutralColorPicker": "#343127",
-  // "settingGreenColorPicker": "#38821f"
-
-        console.warn(settings);
-        ColorPicker.loadColorSettings(settings)
+        ColorPicker.apply(state);
 
         const currentVersion = Updater.getCurrentVersion();
-        if (settings.settingVersion) {
-            if (currentVersion != settings.settingVersion) {
-
-                Updater.showNewFeatures(currentVersion);
-                module.exports.saveSettings();
-            }
-        } else {
+        if (state.settingVersion != currentVersion) {
             Updater.showNewFeatures(currentVersion);
             module.exports.saveSettings();
         }
 
-        if (settings.settingArchetypes) {
-            GearRating.setArchetypes(settings.settingArchetypes)
+        if (state.settingArchetypes) {
+            GearRating.setArchetypes(state.settingArchetypes)
         }
 
-        $('#selectDefaultFolderSubmitOutputText').text(settings.settingDefaultPath || defaultPath);
-        Api.setSettings(settings);
+        emit();
+        // Lets the React Settings page render as soon as values exist,
+        // independently of the rest of the startup chain.
+        window.dispatchEvent(new Event('e7:settings'));
+        Api.setSettings(module.exports.toApiSettings());
     },
 
     saveSettings: async () => {
+        if (!loaded) {
+            return;
+        }
+
         try {
             Saves.createFolder();
         } catch (e) {
@@ -294,52 +278,21 @@ module.exports = {
         }
 
         console.log("SAVE SETTINGS");
-        const settings = {
-            settingGpu: document.getElementById('settingGpu').checked,
-            settingUnlockOnUnequip: document.getElementById('settingUnlockOnUnequip').checked,
-            settingRageSet: document.getElementById('settingRageSet').checked,
-            settingPenSet: document.getElementById('settingPenSet').checked,
-            settingDefaultUseReforgedStats: document.getElementById('settingDefaultUseReforgedStats').checked,
-            settingDefaultUseHeroPriority: document.getElementById('settingDefaultUseHeroPriority').checked,
-            settingDefaultUseSubstatMods: document.getElementById('settingDefaultUseSubstatMods').checked,
-            settingDefaultLockedItems: document.getElementById('settingDefaultLockedItems').checked,
-            settingDefaultEquippedItems: document.getElementById('settingDefaultEquippedItems').checked,
-            settingDefaultKeepCurrent: document.getElementById('settingDefaultKeepCurrent').checked,
-            settingMaxResults: parseInt(module.exports.parseNumberValue('settingMaxResults') || 5_000_000),
-            settingMaxRamGb: parseInt(module.exports.parseNumberValue('settingMaxRamGb') || 6),
-            settingPenDefense: parseInt(module.exports.parseNumberValue('settingPenDefense') || 1_500),
-            settingLocatorWidth: parseInt(module.exports.parseNumberValue('settingLocatorWidth') || 5),
-            settingDefaultPath: pathOverride ? pathOverride : defaultPath,
-            settingExcludeEquipped: $('#optionsExcludeGearFrom').multipleSelect('getSelects'),
-            settingEnhanceLimit: $('#optionsEnhanceLimit').multipleSelect('getSelects'),
-            settingDarkMode: document.getElementById('darkSlider').checked,
+        state = Object.assign({}, state, readLegacySelects(), {
+            settingDarkMode: DarkMode.isDark(),
             settingVersion: Updater.getCurrentVersion(),
             settingArchetypes: GearRating.getArchetypes(),
-            settingBackgroundColor: document.getElementById('backgroundColorPicker').value,
-            settingTextColorPicker: document.getElementById('textColorPicker').value,
-            settingAccentColorPicker: document.getElementById('accentColorPicker').value,
-            settingInputColorPicker: document.getElementById('inputColorPicker').value,
-            settingGridTextColorPicker: document.getElementById('gridTextColorPicker').value,
-            settingRedColorPicker: document.getElementById('redColorPicker').value,
-            settingNeutralColorPicker: document.getElementById('neutralColorPicker').value,
-            settingGreenColorPicker: document.getElementById('greenColorPicker').value
-        };
-        defaultOptimizerSettings = {
-            settingDefaultUseReforgedStats: settings.settingDefaultUseReforgedStats,
-            settingDefaultUseHeroPriority: settings.settingDefaultUseHeroPriority,
-            settingDefaultUseSubstatMods: settings.settingDefaultUseSubstatMods,
-            settingDefaultLockedItems: settings.settingDefaultLockedItems,
-            settingDefaultEquippedItems: settings.settingDefaultEquippedItems,
-            settingDefaultKeepCurrent: settings.settingDefaultKeepCurrent
-        }
+        });
 
-        excludeSelects = settings.settingExcludeEquipped;
-        enhanceLimit = settings.settingEnhanceLimit;
+        Files.saveFile(settingsPath, JSON.stringify(state, null, 2))
+        Api.setSettings(module.exports.toApiSettings());
+    },
 
-        Files.saveFile(settingsPath, JSON.stringify(settings, null, 2))
+    toApiSettings: () => {
+        const settings = Object.assign({}, state);
         if (Files.isMac()) {
             settings.settingGpu = false;
         }
-        Api.setSettings(settings);
+        return settings;
     },
 }
